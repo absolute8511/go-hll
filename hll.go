@@ -62,19 +62,20 @@ func SizeByP(p int) (int, error) {
 // Add a hash to an HLL.
 // Might allocate a block (with Alloc) if HLL is sparse and it gets full.
 // Make sure to use a good hash function.
-func (h HLL) Add(hash uint64) {
+func (h HLL) Add(hash uint64) bool {
 	if h[0]&(1<<6) != 0 {
-		if Dense(h[8:]).Add(hash) {
+		changed := Dense(h[8:]).Add(hash)
+		if changed {
 			h[0] |= 1 << 7 // Mark as dirty.
 		}
-		return
+		return changed
 	}
 	s := sparse(h)
 	if s.Add(hash) == ok {
-		return
+		return true
 	}
 	toDense(s)
-	Dense(h[8:]).Add(hash)
+	return Dense(h[8:]).Add(hash)
 }
 
 // Merge another HLL (of the same precision) into this.
